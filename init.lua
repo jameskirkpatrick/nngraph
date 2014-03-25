@@ -18,13 +18,11 @@ local istorchclass = utils.istorchclass
 
 -- Modify the __call function to hack into nn.Module
 local Module = torch.getmetatable('nn.Module')
-function Module:__call__(...)
-	local nArgs = select("#", ...)
-	assert(nArgs <= 1, 'Use {input1, input2} to pass multiple inputs.')
+function Module:__call__(input,noutput)
 
-	local input = ...
-	if nArgs == 1 and input == nil then
-		error('what is this in the input? nil')
+	if not noutput and type(input) == 'number' then
+		noutput = input
+		input = {}
 	end
 	if not istable(input) then
 		input = {input}
@@ -38,5 +36,14 @@ function Module:__call__(...)
 		mnode:add(dnode,true)
 	end
 
-	return mnode
+	if noutput == nil then
+		return mnode
+	end
+
+    if torch.typename(noutput) == 'nngraph.Node' then 
+        error('To create a node that takes several inputs, please use a table of the inputs')
+    end
+
+	-- backward compatibility for a while, reaise an error.
+	error('Use node:split(noutput) to split the output of a node into multiple nodes')
 end
